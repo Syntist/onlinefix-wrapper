@@ -14,7 +14,13 @@ Existing overrides for other DLLs are preserved; overrides for the names above a
 
 ## Install
 
-Requires Python 3.9 or later, UMU, an installed Proton runner, and a running, signed-in native Steam client. From this folder, run:
+Requires Python 3.9 or later, UMU, an installed Proton runner, and a running, signed-in native Steam client. To download and install the latest version directly from GitHub, run:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Syntist/onlinefix-wrapper/main/install.sh | bash
+```
+
+This requires `curl`. If you cloned or downloaded the repository, install from its folder instead:
 
 ```sh
 bash install.sh
