@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+"""Keep host Steam available when UMU launches Faugus's selected Proton."""
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+if len(sys.argv) < 2:
+    sys.exit('Usage: onlinefix COMMAND [ARGUMENTS...]')
+selected = os.environ.get('PROTONPATH', '')
+root = Path(selected).expanduser()
+if not selected or not root.is_dir() or not (root / 'proton').is_file() or not (root / 'toolmanifest.vdf').is_file():
+    sys.exit('onlinefix: Faugus must select an installed Proton runner (PROTONPATH).')
+root = root.resolve()
+steam = os.environ.get('ONLINEFIX_STEAM_PATH') or str(Path.home() / '.local/share/Steam')
+if not Path(steam, 'legacycompat').is_dir():
+    sys.exit(f'onlinefix: Steam legacycompat directory not found in {steam}')
+with tempfile.TemporaryDirectory(prefix='onlinefix-') as tmp:
+    wrapper = Path(tmp)
+    for item in root.iterdir():
+        if item.name != 'proton':
+            (wrapper / item.name).symlink_to(item, target_is_directory=item.is_dir())
+    proton = wrapper / 'proton'
+    proton.write_text('#!/bin/sh\nexport STEAM_COMPAT_CLIENT_INSTALL_PATH="$UMU_HOST_STEAM_PATH"\nexport UMU_USE_STEAM=0\nexec "$UMU_HOST_STEAM_PROTON/proton" "$@"\n')
+    proton.chmod(0o755)
+    env = os.environ.copy()
+    overrides = env.get('WINEDLLOVERRIDES', '')
+    names = {'winmm', 'winhttp', 'version', 'onlinefix', 'onlinefix64', 'steamfix', 'steamfix64', 'epicfix', 'epicfix64', 'steamoverlay', 'steamoverlay64', 'steam_api', 'steam_api64', 'stubdrm', 'stubdrm64', 'dnet', 'custom', 'nrsc'}
+    kept = []
+    for entry in overrides.split(';'):
+        dlls, sep, order = entry.partition('=')
+        if not sep:
+            if entry.strip(): kept.append(entry)
+            continue
+        remaining = [dll for dll in dlls.split(',') if dll.strip().lower().removesuffix('.dll') not in names]
+        if remaining: kept.append(','.join(remaining) + '=' + order)
+    kept.append('winmm,winhttp,version,OnlineFix,OnlineFix64,SteamFix,SteamFix64,EpicFix,EpicFix64,SteamOverlay,SteamOverlay64,steam_api,steam_api64,StubDRM,StubDRM64,dnet,Custom,nrsc=n,b')
+    env['WINEDLLOVERRIDES'] = ';'.join(kept)
+    env.update(PROTONPATH=str(wrapper), UMU_HOST_STEAM_PROTON=str(root), UMU_HOST_STEAM_PATH=steam, UMU_USE_STEAM='0')
+    try:
+        result = subprocess.run(sys.argv[1:], env=env, check=False)
+    except KeyboardInterrupt:
+        sys.exit(130)
+    sys.exit(result.returncode if result.returncode >= 0 else 128 - result.returncode)
