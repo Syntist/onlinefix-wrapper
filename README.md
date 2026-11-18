@@ -1,6 +1,6 @@
 # onlinefix wrapper
 
-`onlinefix` helps launch Proton games through UMU with the running host Steam client, including games launched outside Steam. It works with Faugus and does not require adding a game to Steam or patching UMU.
+`onlinefix` helps launch Proton games through UMU with the running host Steam client, including games launched outside Steam. It can be used with OnlineFix, [ReFix](https://github.com/Coronitaa/ReFix), and FreeTP. It works with Faugus and does not require adding a game to Steam or patching UMU. Compatibility depends on the game and fix; not every combination has been tested.
 
 The wrapper uses the Proton runner selected by Faugus, creates a temporary compatibility-tool wrapper, and removes it when the launch finishes. The temporary wrapper passes the host Steam path to Proton after UMU has set up its environment and sets `UMU_USE_STEAM=0`. The launcher sets these Wine DLL overrides to native first, builtin second (`n,b`):
 
